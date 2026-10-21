@@ -65,12 +65,11 @@ services:
     configs:
       - source: dump_script
         target: /dump.sh
-        mode: 0755
     entrypoint: ['/bin/sh', '-c']
     command:
       - |
         while true; do
-          /dump.sh || echo "Dump failed"
+          sh /dump.sh || echo "Dump failed"
           sleep "$${DUMP_INTERVAL_SECONDS:-86400}"
         done
     depends_on:

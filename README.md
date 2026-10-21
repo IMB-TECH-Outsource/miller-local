@@ -21,7 +21,7 @@ Open `http://<server-ip>` (port `HTTP_PORT`).
 | What | How |
 |------|-----|
 | Update | change `BACKEND_TAG` / `FRONTEND_TAG` in `.env`, then `docker compose pull && docker compose up -d` |
-| Dump now | `docker compose exec dumper /dump.sh` |
+| Dump now | `docker compose exec dumper sh /dump.sh` |
 | Restore | `gunzip -c backups/xxx.sql.gz \| docker compose exec -T postgres psql -U miller miller` |
 | Logs | `docker compose logs -f backend` |
 
