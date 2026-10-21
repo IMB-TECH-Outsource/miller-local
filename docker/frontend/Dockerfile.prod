@@ -1,0 +1,23 @@
+FROM node:22-alpine AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+ARG VITE_DEFAULT_URL=/api/v1
+ENV VITE_DEFAULT_URL=${VITE_DEFAULT_URL}
+
+RUN npx vite build
+
+
+FROM nginx:1.27-alpine
+
+ENV BACKEND_UPSTREAM=backend:5000
+
+COPY --from=nginx default.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80

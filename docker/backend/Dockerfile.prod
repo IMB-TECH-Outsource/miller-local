@@ -1,0 +1,43 @@
+FROM python:3.12.9-slim-bookworm AS build
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    build-essential libpq-dev pkg-config \
+    libcairo2-dev libpango1.0-dev libgdk-pixbuf-2.0-dev libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements /requirements
+RUN pip wheel --wheel-dir /wheels -r /requirements/production.txt
+
+
+FROM python:3.12.9-slim-bookworm
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DJANGO_SETTINGS_MODULE=config.settings.production \
+    DJANGO_READ_DOT_ENV_FILE=False
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    libpq-dev gettext \
+    libcairo2 libpango1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0 \
+    fonts-liberation fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /wheels /wheels
+RUN pip install --no-cache-dir --no-index --find-links=/wheels /wheels/* && rm -rf /wheels
+
+RUN addgroup --system django && adduser --system --ingroup django django
+
+COPY --from=docker --chmod=755 start.prod /start
+
+WORKDIR /app
+COPY --chown=django:django . /app
+
+RUN DATABASE_URL="sqlite://:memory:" DJANGO_SETTINGS_MODULE=config.settings.test \
+    python manage.py compilemessages \
+    && mkdir -p /app/apps/media /app/staticfiles \
+    && chown -R django:django /app/apps/media /app/staticfiles
+
+USER django
+
+EXPOSE 5000
+CMD ["/start"]
