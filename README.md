@@ -3,7 +3,7 @@
 Runs Miller from ready images on Docker Hub. Nothing is built here.
 
 ```bash
-# edit .env: POSTGRES_PASSWORD, DJANGO_SECRET_KEY (change-me), DUMP_BOT_TOKEN, DUMP_CHAT_ID
+# .env is ready; only DUMP_BOT_TOKEN and DUMP_CHAT_ID still need to be filled
 docker login              # account with access to imbtechdev/imb_hr
 docker compose up -d
 ```
