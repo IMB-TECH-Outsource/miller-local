@@ -19,12 +19,13 @@ function New-Secret([int]$Length) {
 
 Write-Host "== 1/7 .env"
 $envFile = Join-Path $here ".env"
-if (-not (Test-Path $envFile)) {
-    $text = Get-Content (Join-Path $here ".env.example") -Raw
+if (-not (Test-Path $envFile)) { Copy-Item (Join-Path $here ".env.example") $envFile }
+$text = Get-Content $envFile -Raw
+if ($text -match "(?m)=change-me\s*$") {
     $text = $text -replace "(?m)^POSTGRES_PASSWORD=change-me", "POSTGRES_PASSWORD=$(New-Secret 24)"
     $text = $text -replace "(?m)^DJANGO_SECRET_KEY=change-me", "DJANGO_SECRET_KEY=$(New-Secret 50)"
     Set-Content -Path $envFile -Value $text -Encoding ascii -NoNewline
-    Write-Host "Created .env with random passwords. Fill DUMP_BOT_TOKEN / DUMP_CHAT_ID in it later if needed."
+    Write-Host "Replaced change-me values in .env with random passwords."
 }
 $httpPort = 80
 $portLine = Select-String -Path $envFile -Pattern "^HTTP_PORT=(\d+)" | Select-Object -First 1

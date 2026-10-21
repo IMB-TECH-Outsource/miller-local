@@ -3,7 +3,7 @@
 Runs Miller from ready images on Docker Hub. Nothing is built here.
 
 ```bash
-cp .env.example .env      # set POSTGRES_PASSWORD, DJANGO_SECRET_KEY, DUMP_BOT_TOKEN, DUMP_CHAT_ID
+# edit .env: POSTGRES_PASSWORD, DJANGO_SECRET_KEY (change-me), DUMP_BOT_TOKEN, DUMP_CHAT_ID
 docker login              # account with access to imbtechdev/imb_hr
 docker compose up -d
 ```
@@ -31,7 +31,7 @@ Copy this whole folder to the laptop (e.g. `C:\miller`) and double-click **`inst
 
 1. First run installs WSL. Restart Windows, open **Ubuntu 24.04** from the Start menu once, create a user, close it.
 2. Double-click `install.cmd` again. It:
-   - creates `.env` with random DB password and Django secret key,
+   - replaces `change-me` in `.env` with a random DB password and Django secret key,
    - installs Docker Engine inside WSL Ubuntu (no Docker Desktop needed),
    - asks for the Docker Hub login, pulls the images and starts Miller,
    - asks for your Windows password once to register the **"Miller Server"** startup task
