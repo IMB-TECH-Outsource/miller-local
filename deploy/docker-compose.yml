@@ -10,7 +10,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    configs:
+      - source: pg_init
+        target: /docker-entrypoint-initdb.d/00-init.sql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
       interval: 5s
@@ -24,7 +26,7 @@ services:
       - redis_data:/data
 
   backend:
-    image: ${IMAGE_REPO}:miller-backend-${BACKEND_TAG:?set BACKEND_TAG in .env}
+    image: imbtechdev/imb_hr:miller-backend-${BACKEND_TAG:?set BACKEND_TAG in .env}
     restart: unless-stopped
     env_file: .env
     environment:
@@ -39,7 +41,7 @@ services:
         condition: service_started
 
   frontend:
-    image: ${IMAGE_REPO}:miller-frontend-${FRONTEND_TAG:?set FRONTEND_TAG in .env}
+    image: imbtechdev/imb_hr:miller-frontend-${FRONTEND_TAG:?set FRONTEND_TAG in .env}
     restart: unless-stopped
     volumes:
       - media:/usr/share/nginx/media:ro
@@ -49,20 +51,60 @@ services:
       - backend
 
   dumper:
-    image: ${IMAGE_REPO}:miller-dumper-${DUMPER_TAG:?set DUMPER_TAG in .env}
+    image: postgres:17-alpine
     restart: unless-stopped
     env_file: .env
     environment:
       PGHOST: postgres
-      PGPORT: 5432
       PGDATABASE: ${POSTGRES_DB}
       PGUSER: ${POSTGRES_USER}
       PGPASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Asia/Tashkent
     volumes:
       - ./backups:/backups
+    configs:
+      - source: dump_script
+        target: /dump.sh
+        mode: 0755
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        while true; do
+          /dump.sh || echo "Dump failed"
+          sleep "$${DUMP_INTERVAL_SECONDS:-86400}"
+        done
     depends_on:
       postgres:
         condition: service_healthy
+
+configs:
+  pg_init:
+    content: |
+      CREATE EXTENSION IF NOT EXISTS pg_trgm;
+  dump_script:
+    content: |
+      #!/bin/sh
+      set -eu
+      file="/backups/miller_$$(date +%Y-%m-%d_%H-%M).sql.gz"
+      pg_dump --no-owner --no-privileges | gzip > "$$file"
+      size=$$(stat -c %s "$$file")
+      echo "Dump created: $$file ($$size bytes)"
+      find /backups -name '*.sql.gz' -mtime +"$${DUMP_KEEP_DAYS:-7}" -delete
+      if [ -z "$${DUMP_BOT_TOKEN:-}" ] || [ -z "$${DUMP_CHAT_ID:-}" ]; then
+        echo "DUMP_BOT_TOKEN or DUMP_CHAT_ID not set, Telegram upload skipped"
+        exit 0
+      fi
+      if [ "$$size" -gt 52428800 ]; then
+        echo "Dump is over Telegram's 50 MB limit, upload skipped"
+        exit 1
+      fi
+      command -v curl >/dev/null || apk add --no-cache curl >/dev/null
+      curl -sS --fail --max-time 300 \
+        -F chat_id="$$DUMP_CHAT_ID" \
+        -F caption="$${DUMP_PROJECT_NAME:-Miller} | $$(date '+%d.%m.%Y %H:%M') | $$((size / 1024)) KB" \
+        -F document=@"$$file" \
+        "https://api.telegram.org/bot$$DUMP_BOT_TOKEN/sendDocument" > /dev/null
+      echo "Dump sent to Telegram chat $$DUMP_CHAT_ID"
 
 volumes:
   postgres_data: {}

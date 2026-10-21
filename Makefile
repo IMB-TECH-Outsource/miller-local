@@ -33,7 +33,7 @@ ps:
 	$(COMPOSE) ps
 
 dump:
-	$(COMPOSE) exec dumper dump.sh
+	$(COMPOSE) exec dumper /dump.sh
 
 restore:
 	@test -n "$(FILE)" || (echo "Usage: make restore FILE=backups/xxx.sql.gz" && exit 1)

@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 : "${IMAGE_REPO:?Set IMAGE_REPO in .env, e.g. imbtechdev/imb_hr}"
 : "${VERSION:?Set VERSION, e.g. make release VERSION=1.0.0}"
 platforms="${IMAGE_PLATFORMS:-linux/amd64,linux/arm64}"
-targets="${TARGETS:-backend frontend dumper}"
+targets="${TARGETS:-backend frontend}"
 
 docker buildx inspect miller-builder >/dev/null 2>&1 \
   || docker buildx create --name miller-builder --driver docker-container >/dev/null
@@ -42,8 +42,6 @@ for target in ${targets}; do
     frontend)
       build frontend --label "org.opencontainers.image.revision=$(git -C src/frontend rev-parse HEAD)" \
         -f docker/frontend/Dockerfile.prod --build-context nginx=docker/frontend src/frontend ;;
-    dumper)
-      build dumper docker/dumper ;;
     *)
       echo "Unknown target: ${target}" >&2; exit 1 ;;
   esac

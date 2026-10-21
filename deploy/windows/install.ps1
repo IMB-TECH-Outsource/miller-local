@@ -45,7 +45,7 @@ Invoke-Wsl "systemctl enable --now docker"
 
 Write-Host "Copying deploy files to $AppDir..."
 $wslDeploy = (wsl.exe -d $Distro -- wslpath -a ($deployDir -replace '\', '/')).Trim()
-Invoke-Wsl "mkdir -p $AppDir && cp '$wslDeploy/docker-compose.yml' '$wslDeploy/init.sql' $AppDir/ && cp '$wslDeploy/start.sh' /usr/local/bin/miller-start && chmod +x /usr/local/bin/miller-start"
+Invoke-Wsl "mkdir -p $AppDir && cp '$wslDeploy/docker-compose.yml' $AppDir/"
 Invoke-Wsl "test -f $AppDir/.env || cp '$wslDeploy/.env' $AppDir/.env"
 
 Write-Host "Docker Hub login (account with access to the private image repo):"
@@ -54,7 +54,8 @@ wsl.exe -d $Distro -u root -- docker login
 Invoke-Wsl "cd $AppDir && docker compose pull && docker compose up -d"
 
 $taskName = "Miller Server"
-$action = New-ScheduledTaskAction -Execute "wsl.exe" -Argument "-d $Distro -u root -- /usr/local/bin/miller-start"
+$startCmd = "until docker info >/dev/null 2>&1; do sleep 2; done; cd $AppDir && docker compose up -d; exec sleep infinity"
+$action = New-ScheduledTaskAction -Execute "wsl.exe" -Argument "-d $Distro -u root -- sh -c `"$startCmd`""
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1)
 $cred = Get-Credential -UserName "$env:USERDOMAIN\$env:USERNAME" -Message "Windows password for the startup task (runs without login)"

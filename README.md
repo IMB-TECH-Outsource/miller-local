@@ -24,7 +24,7 @@ Code in `src/backend` and `src/frontend` is mounted into containers, so edits re
 
 ## Dumper
 
-Every `DUMP_INTERVAL_SECONDS` (default 24h) the `dumper` service runs `pg_dump`, keeps the file in `backups/`
+Every `DUMP_INTERVAL_SECONDS` (default 24h) the `dumper` service (stock `postgres:17-alpine`, script inside the compose file) runs `pg_dump`, keeps the file in `backups/`
 (`DUMP_KEEP_DAYS`) and sends it to Telegram. Set `DUMP_BOT_TOKEN` and `DUMP_CHAT_ID` in `.env`, then `docker compose up -d dumper`.
 
 ```bash
@@ -42,5 +42,5 @@ make restore FILE=backups/xxx.sql.gz        # restore into local Postgres
 make release VERSION=1.0.1
 ```
 
-Pushes `$IMAGE_REPO:miller-{backend,frontend,dumper}-<VERSION>` (amd64 + arm64). With `DOCKERHUB_TOKEN` set in `.env`,
+Pushes `$IMAGE_REPO:miller-{backend,frontend}-<VERSION>` (amd64 + arm64). With `DOCKERHUB_TOKEN` set in `.env`,
 older `miller-*` tags are deleted after the push, so only the newest Miller version stays. Other tags in the repo are never touched.
