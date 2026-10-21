@@ -3,3 +3,4 @@ src/
 backups/
 deploy/.env
 deploy/backups/
+.idea/
