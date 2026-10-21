@@ -1,46 +1,26 @@
-# Miller dev
+# Miller
 
-One project to run the whole Miller stack locally: backend (Django), frontend (Vite),
-Postgres, Redis and a database dumper that sends backups to Telegram.
-
-Backend and frontend code is cloned from GitHub into `src/` and built with the Dockerfiles in `docker/`.
-
-## Start
+Runs Miller from ready images on Docker Hub. Nothing is built here.
 
 ```bash
-make init      # creates .env, clones both repos
-make up        # git pull + docker pull + build + start
-make superuser
+cp .env.example .env      # set POSTGRES_PASSWORD, DJANGO_SECRET_KEY, DUMP_BOT_TOKEN, DUMP_CHAT_ID
+docker login              # account with access to imbtechdev/imb_hr
+docker compose up -d
 ```
 
-| Service  | URL |
-|----------|-----|
-| frontend | http://localhost:3002 |
-| backend  | http://localhost:8000/api/v1 |
-| postgres | localhost:5433 (miller/miller) |
+Open `http://<server-ip>` (port `HTTP_PORT`).
 
-Code in `src/backend` and `src/frontend` is mounted into containers, so edits reload live.
-`make pull` skips a repo that has local changes. Branches and repo URLs are in `.env`.
+| Service  | Image |
+|----------|-------|
+| backend  | `imbtechdev/imb_hr:miller-backend-${BACKEND_TAG}` |
+| frontend | `imbtechdev/imb_hr:miller-frontend-${FRONTEND_TAG}` (nginx, proxies `/api` to backend) |
+| postgres | `postgres:17` |
+| redis    | `redis:7-alpine` |
+| dumper   | `postgres:17-alpine`, dumps every `DUMP_INTERVAL_SECONDS` to `./backups` and Telegram |
 
-## Dumper
-
-Every `DUMP_INTERVAL_SECONDS` (default 24h) the `dumper` service (stock `postgres:17-alpine`, script inside the compose file) runs `pg_dump`, keeps the file in `backups/`
-(`DUMP_KEEP_DAYS`) and sends it to Telegram. Set `DUMP_BOT_TOKEN` and `DUMP_CHAT_ID` in `.env`, then `docker compose up -d dumper`.
-
-```bash
-make dump                                   # dump now
-make restore FILE=backups/xxx.sql.gz        # restore into local Postgres
-```
-
-## Other commands
-
-`make down`, `make logs`, `make ps`, `make restart`, `make shell`
-
-## Release images
-
-```bash
-make release VERSION=1.0.1
-```
-
-Pushes `$IMAGE_REPO:miller-{backend,frontend}-<VERSION>` (amd64 + arm64). With `DOCKERHUB_TOKEN` set in `.env`,
-older `miller-*` tags are deleted after the push, so only the newest Miller version stays. Other tags in the repo are never touched.
+| What | How |
+|------|-----|
+| Update | change `BACKEND_TAG` / `FRONTEND_TAG` in `.env`, then `docker compose pull && docker compose up -d` |
+| Dump now | `docker compose exec dumper /dump.sh` |
+| Restore | `gunzip -c backups/xxx.sql.gz \| docker compose exec -T postgres psql -U miller miller` |
+| Logs | `docker compose logs -f backend` |

@@ -1,7 +1,0 @@
-#!/bin/bash
-set -euo pipefail
-
-python manage.py migrate --noinput --skip-checks
-python manage.py collectstatic --noinput
-
-exec gunicorn config.wsgi --bind 0.0.0.0:5000 --workers "${GUNICORN_WORKERS:-3}" --timeout "${GUNICORN_TIMEOUT:-120}"
