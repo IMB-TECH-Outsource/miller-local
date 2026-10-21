@@ -35,3 +35,12 @@ make restore FILE=backups/xxx.sql.gz        # restore into local Postgres
 ## Other commands
 
 `make down`, `make logs`, `make ps`, `make restart`, `make shell`
+
+## Release images
+
+```bash
+make release VERSION=1.0.1
+```
+
+Pushes `$IMAGE_REPO:miller-{backend,frontend,dumper}-<VERSION>` (amd64 + arm64). With `DOCKERHUB_TOKEN` set in `.env`,
+older `miller-*` tags are deleted after the push, so only the newest Miller version stays. Other tags in the repo are never touched.

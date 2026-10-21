@@ -16,9 +16,22 @@ build() {
   local tag="${IMAGE_REPO}:miller-${name}-${VERSION}"
   echo "==> ${tag} (${platforms})"
   docker buildx build --builder miller-builder --platform "${platforms}" \
-    -t "${tag}" -t "${IMAGE_REPO}:miller-${name}-latest" \
+    -t "${tag}" \
     --label "org.opencontainers.image.version=${VERSION}" \
     --push "$@"
+  prune "${name}"
+}
+
+prune() {
+  [ -n "${DOCKERHUB_TOKEN:-}" ] || return 0
+  local prefix="miller-$1-" keep="miller-$1-${VERSION}" user="${DOCKERHUB_USER:-${IMAGE_REPO%%/*}}"
+  local jwt
+  jwt="$(curl -fsS -X POST https://hub.docker.com/v2/users/login -H "Content-Type: application/json"     -d "{\"username\":\"${user}\",\"password\":\"${DOCKERHUB_TOKEN}\"}" | sed -E 's/.*"token":"([^"]+)".*//')"
+  curl -fsS -H "Authorization: Bearer ${jwt}"     "https://hub.docker.com/v2/namespaces/${IMAGE_REPO%%/*}/repositories/${IMAGE_REPO#*/}/tags?page_size=100"     | grep -oE '"name":"[^"]+"' | cut -d'"' -f4     | while read -r old; do
+        if [[ "${old}" == "${prefix}"* && "${old}" != "${keep}" ]]; then
+          curl -fsS -o /dev/null -X DELETE -H "Authorization: Bearer ${jwt}"             "https://hub.docker.com/v2/namespaces/${IMAGE_REPO%%/*}/repositories/${IMAGE_REPO#*/}/tags/${old}"             && echo "    deleted old tag ${old}"
+        fi
+      done
 }
 
 for target in ${targets}; do

@@ -24,7 +24,7 @@ docker compose up -d
 
 ## Update to a new version
 
-Change `BACKEND_TAG` / `FRONTEND_TAG` in `.env`, then `docker compose pull && docker compose up -d`.
+Change `BACKEND_TAG` / `FRONTEND_TAG` / `DUMPER_TAG` in `.env`, then `docker compose pull && docker compose up -d`.
 
 ## Restore a dump
 

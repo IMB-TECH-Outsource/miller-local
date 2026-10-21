@@ -24,7 +24,7 @@ services:
       - redis_data:/data
 
   backend:
-    image: ${IMAGE_REPO}:miller-backend-${BACKEND_TAG:-latest}
+    image: ${IMAGE_REPO}:miller-backend-${BACKEND_TAG:?set BACKEND_TAG in .env}
     restart: unless-stopped
     env_file: .env
     environment:
@@ -39,7 +39,7 @@ services:
         condition: service_started
 
   frontend:
-    image: ${IMAGE_REPO}:miller-frontend-${FRONTEND_TAG:-latest}
+    image: ${IMAGE_REPO}:miller-frontend-${FRONTEND_TAG:?set FRONTEND_TAG in .env}
     restart: unless-stopped
     volumes:
       - media:/usr/share/nginx/media:ro
@@ -49,7 +49,7 @@ services:
       - backend
 
   dumper:
-    image: ${IMAGE_REPO}:miller-dumper-${DUMPER_TAG:-latest}
+    image: ${IMAGE_REPO}:miller-dumper-${DUMPER_TAG:?set DUMPER_TAG in .env}
     restart: unless-stopped
     env_file: .env
     environment:
